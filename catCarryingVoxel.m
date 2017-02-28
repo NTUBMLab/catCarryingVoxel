@@ -1,10 +1,13 @@
+% catCarryingVoxel ver 0.4
 % Using mask to find the voxels and extract voxel value from your data.
 %
-% Usage: [meanvalue, voxelvalue] = catCarryingVoxel(mask, data, mode, th);
+% Usage: [meanvalue, voxelvalue, voxmni, voxcor] = catCarryingVoxel(mask, data, mode, th);
 %
 %   Output:
 %       meanvalue: the mean voxel value for each data. (mask x data matirx)
 %       voxelvalue: give you every voxel value for each data. (mask x data)
+%       voxmni: the MNI coordinates for each voxel in "voxelvalue".
+%       voxcor: the index of 3D image matrix for each voxel.
 %
 %   Input:
 %       mask: string or cell array for mask image. (*.nii or *.img; 
@@ -38,10 +41,13 @@
 % Dependicies: SPM (tested on SPM12 revision 6906)
 %
 % Version log:
-% Yu-Shiang Su Dec 12 2016: created this script.
-% Yu-Shiang Su Feb 21 2017: minor modification for public version.
+% Yu-Shiang Su Dec 12 2016: ver 0.1 created this script.
+% Yu-Shiang Su Feb 21 2017: ver 0.2 minor modification for public version.
+% Yu-Shiang Su Feb 27 2017: ver 0.3 fixed minor bug in mode 2.
+% Yu-Shiang Su Feb 28 2017: ver 0.4 add feature of outputing coordinates 
+%                                   in mni or voxel space.
 
-function [meanvalue, voxelvalue] = catCarryingVoxel(mask, data, mode, th)
+function [meanvalue, voxelvalue, voxmni, voxcor] = catCarryingVoxel(mask, data, mode, th)
 
 if nargin < 3 || isempty(mode)
     mode = 1;
@@ -76,10 +82,16 @@ if any(ismember(reshape(cat(1,data_V.mat)', 16, [])', reshape(data_V(1).mat', 16
 end
 if byeachdata == 1;
     fprintf('%s\n', 'If you have big data here. This will be dramaticaaly slower than regular processing.');
+    voxmni = cell(mask_n, length(data_V));
+    voxcor = cell(mask_n, length(data_V));
+else
+    voxmni = cell(mask_n, 1);
+    voxcor = cell(mask_n, 1);
 end
 
 meanvalue = nan(mask_n, length(data_V));
 voxelvalue = cell(mask_n, length(data_V));
+
 switch mode
     %% mode 1: extract value base on voxels space from "mask"
     case 1
@@ -96,6 +108,9 @@ switch mode
                     invalidvox = (rawdata == 0) | isnan(rawdata);
                     meanvalue(mask_counter, data_counter) = mean(rawdata(~invalidvox));
                     voxelvalue{mask_counter, data_counter} = rawdata(~invalidvox);
+                    rawdata_mnixyz = (data_V(data_counter).mat*[mask_datavoxxyz(~invalidvox,1) mask_datavoxxyz(~invalidvox,2) mask_datavoxxyz(~invalidvox,3) ones(sum(~invalidvox),1)]')';
+                    voxmni{mask_counter, data_counter} = rawdata_mnixyz(:,1:3);
+                    voxcor{mask_counter, data_counter} = mask_datavoxxyz(1:3,~invalidvox);
                     fprintf('%s%d%s%d%s%d%s%d%s%d%s\n', 'Mask ', mask_counter, ...
                             ', Data ', data_counter, ': Found ', ...
                             length(mask_mnixyz), ...
@@ -110,6 +125,9 @@ switch mode
                 invalidvox = (sum(rawdata, 1) == 0) | isnan(sum(rawdata,1));
                 meanvalue(mask_counter, :) = mean(rawdata(:,~invalidvox),2);
                 voxelvalue(mask_counter, :) = mat2cell(rawdata(:,~invalidvox), ones(1,size(rawdata,1)), size(rawdata,2));
+                rawdata_mnixyz = (data_V(1).mat*[mask_datavoxxyz(~invalidvox,1) mask_datavoxxyz(~invalidvox,2) mask_datavoxxyz(~invalidvox,3) ones(sum(~invalidvox),1)]')';
+                voxmni{mask_counter, 1} = rawdata_mnixyz(:,1:3);
+                voxcor{mask_counter, 1} = mask_datavoxxyz(1:3,~invalidvox);
                 fprintf('%s%d%s%d%s%d%s%d%s\n', 'Mask ', mask_counter, ...
                             ': Found ', ...
                             length(mask_mnixyz), ...
@@ -140,6 +158,9 @@ switch mode
                     invalidvox = (rawdata == 0) | isnan(rawdata);
                     meanvalue(mask_counter, data_counter) = mean(rawdata(~invalidvox));
                     voxelvalue{mask_counter, data_counter} = rawdata(~invalidvox);
+                    rawdata_mnixyz = (data_V(data_counter).mat*[data_voxxyz(~invalidvox,1) data_voxxyz(~invalidvox,2) data_voxxyz(~invalidvox,3) ones(sum(~invalidvox),1)]')';
+                    voxmni{mask_counter, data_counter} = rawdata_mnixyz(:,1:3);
+                    voxcor{mask_counter, data_counter} = data_voxxyz(~invalidvox,1);
                     fprintf('%s%d%s%d%s%d%s%d%s%d%s\n', 'Mask ', mask_counter, ...
                             ', Data ', data_counter, ': Found ', ...
                             length(mask_idx), ...
@@ -157,9 +178,12 @@ switch mode
                 [data_voxxyzx, data_voxxyzy, data_voxxyzz]= ind2sub(data_size(1:3), data_idx);
                 data_voxxyz = [data_voxxyzx, data_voxxyzy, data_voxxyzz];
                 rawdata = spm_get_data(data_V, data_voxxyz');
-                invalidvox = (sum(rawdata, 2) == 0) | isnan(sum(rawdata,2));
-                meanvalue(mask_counter, :) = mean(rawdata(~invalidvox, :),2);
-                voxelvalue(mask_counter, :) = mat2cell(rawdata(~invalidvox, :), ones(1,size(rawdata,1)), size(rawdata,2));
+                invalidvox = (sum(rawdata, 1) == 0) | isnan(sum(rawdata,1));
+                meanvalue(mask_counter, :) = mean(rawdata(:,~invalidvox),2);
+                voxelvalue(mask_counter, :) = mat2cell(rawdata(:,~invalidvox), ones(1,size(rawdata,1)),sum(~invalidvox));
+                rawdata_mnixyz = (data_V(1).mat*[data_voxxyz(~invalidvox,1) data_voxxyz(~invalidvox,2) data_voxxyz(~invalidvox,3) ones(sum(~invalidvox),1)]')';
+                voxmni{mask_counter,1} = rawdata_mnixyz(:,1:3);
+                voxcor{mask_counter,1} = data_voxxyz(~invalidvox,:);
                 fprintf('%s%d%s%d%s%d%s%d%s\n', 'Mask ', mask_counter, ...
                             ': Found ', ...
                             length(mask_idx), ...
@@ -202,8 +226,9 @@ switch mode
         data_Vol2D = reshape(data_Vol, [], length(data_V));
         
         for mask_counter = 1:mask_n
-            rawdata = data_Vol2D(mask_idx{mask_counter}, :);
-            meanvalue(mask_counter, :) = mean(rawdata, 1);
+            rawdata = data_Vol2D(mask_idx{mask_counter}, :)';
+            meanvalue(mask_counter, :) = mean(rawdata, 2);
+            voxelvalue(mask_counter, :) = mat2cell(rawdata(:,:), ones(1,size(rawdata,1)), size(rawdata,2));
         end
         
         fprintf('%s\n', 'Done!')
