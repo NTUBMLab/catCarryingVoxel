@@ -1,4 +1,4 @@
-% catCarryingVoxel ver 0.4
+% catCarryingVoxel ver 0.5
 % Using mask to find the voxels and extract voxel value from your data.
 %
 % Usage: [meanvalue, voxelvalue, voxmni, voxcor] = catCarryingVoxel(mask, data, mode, th);
@@ -34,9 +34,9 @@
 %           for binanry mask or probalistic mask.
 %
 % Example: 
-%   [meanvalue, voxelvalue] = catCarryingVoxel(spm_select(Inf, ...
-%       'image', 'Select mask file'), spm_select(Inf, 'image', ...
-%       'Select data file'), 1, 0.5);
+%   [meanvalue, voxelvalue, voxmni, voxcor] = catCarryingVoxel(...
+%       spm_select(Inf, 'image', 'Select mask file'), spm_select(Inf, ...
+%       'image', 'Select data file'), 1, 0.5);
 %
 % Dependicies: SPM (tested on SPM12 revision 6906)
 %
@@ -46,6 +46,7 @@
 % Yu-Shiang Su Feb 27 2017: ver 0.3 fixed minor bug in mode 2.
 % Yu-Shiang Su Feb 28 2017: ver 0.4 add feature of outputing coordinates 
 %                                   in mni or voxel space.
+% Yu-Shiang Su Mar 01 2017: ver 0.5 minor bug fixed
 
 function [meanvalue, voxelvalue, voxmni, voxcor] = catCarryingVoxel(mask, data, mode, th)
 
@@ -110,7 +111,7 @@ switch mode
                     voxelvalue{mask_counter, data_counter} = rawdata(~invalidvox);
                     rawdata_mnixyz = (data_V(data_counter).mat*[mask_datavoxxyz(~invalidvox,1) mask_datavoxxyz(~invalidvox,2) mask_datavoxxyz(~invalidvox,3) ones(sum(~invalidvox),1)]')';
                     voxmni{mask_counter, data_counter} = rawdata_mnixyz(:,1:3);
-                    voxcor{mask_counter, data_counter} = mask_datavoxxyz(1:3,~invalidvox);
+                    voxcor{mask_counter, data_counter} = mask_datavoxxyz(~invalidvox, 1:3);
                     fprintf('%s%d%s%d%s%d%s%d%s%d%s\n', 'Mask ', mask_counter, ...
                             ', Data ', data_counter, ': Found ', ...
                             length(mask_mnixyz), ...
@@ -124,10 +125,10 @@ switch mode
                 rawdata = spm_get_data(data_V, mask_datavoxxyz');
                 invalidvox = (sum(rawdata, 1) == 0) | isnan(sum(rawdata,1));
                 meanvalue(mask_counter, :) = mean(rawdata(:,~invalidvox),2);
-                voxelvalue(mask_counter, :) = mat2cell(rawdata(:,~invalidvox), ones(1,size(rawdata,1)), size(rawdata,2));
+                voxelvalue(mask_counter, :) = mat2cell(rawdata(:,~invalidvox), ones(1,size(rawdata,1)), sum(~invalidvox));
                 rawdata_mnixyz = (data_V(1).mat*[mask_datavoxxyz(~invalidvox,1) mask_datavoxxyz(~invalidvox,2) mask_datavoxxyz(~invalidvox,3) ones(sum(~invalidvox),1)]')';
                 voxmni{mask_counter, 1} = rawdata_mnixyz(:,1:3);
-                voxcor{mask_counter, 1} = mask_datavoxxyz(1:3,~invalidvox);
+                voxcor{mask_counter, 1} = mask_datavoxxyz(~invalidvox, 1:3);
                 fprintf('%s%d%s%d%s%d%s%d%s\n', 'Mask ', mask_counter, ...
                             ': Found ', ...
                             length(mask_mnixyz), ...
