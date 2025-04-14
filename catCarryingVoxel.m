@@ -51,7 +51,7 @@
 function [meanvalue, voxelvalue, voxmni, voxcor] = catCarryingVoxel(mask, data, mode, th)
 
 if nargin < 3 || isempty(mode)
-    mode = 1;
+    mode = 2;
 elseif nargin < 4 || isempty(th)
     th = 0.5;
 end
