@@ -17,8 +17,8 @@
 %       mode: Here provide three mode to get voxel value. Please read 
 %             carefully, and choose appropriate mode for your data. Input 
 %             numeric number for correspoding mode.
-%           mode 1: base on voxels space from "mask". (default)
-%           mode 2: base on voxels space from "data".
+%           mode 1: base on voxels space from "mask". 
+%           mode 2: base on voxels space from "data". (default)
 %           mode 3: original "spm_mask" method from extract_voxel_value.
 %                   The results from mode 3 should be equal to mode 2.
 %           ** Rule of thumb: 
