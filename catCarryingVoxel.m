@@ -17,7 +17,7 @@
 %       mode: Here provide three mode to get voxel value. Please read 
 %             carefully, and choose appropriate mode for your data. Input 
 %             numeric number for correspoding mode.
-%           mode 1: base on voxels space from "mask". (default)
+%           mode 1: base on voxels space from "mask".
 %           mode 2: base on voxels space from "data".
 %           mode 3: original "spm_mask" method from extract_voxel_value.
 %                   The results from mode 3 should be equal to mode 2.
@@ -51,7 +51,7 @@
 function [meanvalue, voxelvalue, voxmni, voxcor] = catCarryingVoxel(mask, data, mode, th)
 
 if nargin < 3 || isempty(mode)
-    mode = 1;
+    error('Specify mode for voxel space.');
 elseif nargin < 4 || isempty(th)
     th = 0.5;
 end
